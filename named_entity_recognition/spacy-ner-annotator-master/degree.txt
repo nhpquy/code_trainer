@@ -1,0 +1,1 @@
+[('Hệ Cao Đẳng', {'entities': [(3, 11, 'DEGREE')]}), ('Hệ Đại Học', {'entities': [(3, 10, 'DEGREE')]}), ('Hệ Trung Cấp', {'entities': [(3, 12, 'DEGREE')]})]
