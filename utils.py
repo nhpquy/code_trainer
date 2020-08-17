@@ -2,6 +2,7 @@ import os
 
 input_dir = 'inputs/'
 output_dir = 'outputs/'
+scrapy_dir = 'Scrapy/requiment/requiment'
 
 
 def get_project_root():
@@ -26,6 +27,10 @@ def get_output_file(file_name):
 
 def get_crawl_cmd(type, crawl_output):
     return 'scrapy crawl {} -o {}'.format(type, get_input_file(crawl_output))
+
+
+def get_scracy_dir():
+    return os.path.join(get_project_root(), scrapy_dir)
 
 
 if __name__ == '__main__':

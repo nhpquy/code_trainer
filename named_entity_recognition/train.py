@@ -30,6 +30,7 @@ from __future__ import unicode_literals, print_function
 
 import json
 import random
+import uuid
 from pathlib import Path
 
 import spacy
@@ -113,6 +114,7 @@ def main(model=None, new_model_name="new_model", output_dir=default_output_dir, 
         doc = nlp(json_text)
 
         result = {
+            'ENTITY_ID': str(uuid.uuid1()),
             'ENTITY': json_text,
             'JOB': [],
             'LANGUAGE': [],

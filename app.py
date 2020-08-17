@@ -1,3 +1,4 @@
+import subprocess
 import time
 
 from flask import Flask, jsonify, request, Response, abort
@@ -7,7 +8,7 @@ from twisted.internet import reactor
 from crawl_spiders import crawl_spiders
 from named_entity_recognition import train
 from restful.response import ResponseBody
-from utils import get_input_file
+from utils import get_input_file, get_scracy_dir
 
 app = Flask(__name__)
 
@@ -30,10 +31,7 @@ def crawl_data():
     crawl_output = get_input_file(crawl_output)
 
     start_time = time.time()
-    runner = CrawlerRunner()
-    d = runner.crawl(spider)
-    d.addBoth(lambda _: reactor.stop())
-    reactor.run()
+    subprocess.Popen(['scrapy', 'crawl', crawl_type, "-o", crawl_output], cwd=get_scracy_dir())
     end_time = time.time() - start_time
 
     result = {
