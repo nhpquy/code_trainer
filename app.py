@@ -1,7 +1,8 @@
 import time
 
 from flask import Flask, jsonify, request, Response, abort
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import CrawlerRunner
+from twisted.internet import reactor
 
 from crawl_spiders import crawl_spiders
 from named_entity_recognition import train
@@ -29,9 +30,10 @@ def crawl_data():
     crawl_output = get_input_file(crawl_output)
 
     start_time = time.time()
-    process = CrawlerProcess()
-    process.crawl(spider)
-    process.start()
+    runner = CrawlerRunner()
+    d = runner.crawl(spider)
+    d.addBoth(lambda _: reactor.stop())
+    reactor.run()
     end_time = time.time() - start_time
 
     result = {
