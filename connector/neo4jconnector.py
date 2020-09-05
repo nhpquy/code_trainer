@@ -1,4 +1,5 @@
-from py2neo import Graph
+import neo4jupyter
+from py2neo import Graph, Node
 
 
 class Neo4jConnection:
@@ -9,7 +10,7 @@ class Neo4jConnection:
         self.__pwd = pwd
         self.__graph = None
         try:
-            self.__graph = Graph(host=self.__uri, auth=(self.__user, self.__pwd))
+            self.__graph = Graph(uri=self.__uri, user=self.__user, password=self.__pwd)
         except Exception as e:
             print("Failed to create the driver:", e)
 
@@ -37,4 +38,22 @@ class Neo4jConnection:
 
 
 if __name__ == '__main__':
+    neo4jupyter.init_notebook_mode()
     conn = Neo4jConnection("bolt://localhost:7687", "admin", "123456")
+    tx = conn.get_graph().begin()
+    nicole = Node("Person", name="Nicole", age=24)
+    tx.create(nicole)
+    drew = Node("Person", name="Drew", age=20)
+    tx.create(drew)
+    mtdew = Node("Drink", name="Mountain Dew", calories=9000)
+    tx.create(mtdew)
+    cokezero = Node("Drink", name="Coke Zero", calories=0)
+    tx.create(cokezero)
+    coke = Node("Manufacturer", name="Coca Cola")
+    tx.create(coke)
+    pepsi = Node("Manufacturer", name="Pepsi")
+    tx.create(pepsi)
+    tx.commit()
+    options = {"Person": "name", "Drink": "name", "Manufacturer": "name"}
+
+    neo4jupyter.draw(conn.get_graph(), options)

@@ -1,7 +1,7 @@
 from py2neo.ogm import GraphObject, Property, RelatedTo, RelatedFrom
 
-from neo4j import settings
-from neo4j.neo4jconnector import Neo4jConnection
+from connector import settings
+from connector.neo4jconnector import Neo4jConnection
 
 graph = Neo4jConnection(
     settings.NEO4J_URL,
@@ -34,11 +34,8 @@ class BaseModel(GraphObject):
 class Device(BaseModel):
     __primarykey__ = "device_id"
 
-    # parent's id
     ent_id = Property()
     job_id = Property()
-
-    # device information
     device_id = Property()
     value = Property()
 
@@ -59,10 +56,8 @@ class Device(BaseModel):
 class Knowledge(BaseModel):
     __primarykey__ = "know_id"
 
-    # parent's id
     ent_id = Property()
     job_id = Property()
-
     know_id = Property()
     value = Property()
 
@@ -86,7 +81,6 @@ class Experience(BaseModel):
     ent_id = Property()
     lang_id = Property()
     frame_id = Property()
-
     exp_id = Property()
     value = Property()
 
@@ -111,7 +105,6 @@ class Language(BaseModel):
 
     ent_id = Property()
     job_id = Property()
-
     lang_id = Property()
     value = Property()
 
@@ -135,7 +128,6 @@ class Framework(BaseModel):
 
     ent_id = Property()
     job_id = Property()
-
     frame_id = Property()
     value = Property()
 
@@ -161,7 +153,7 @@ class Job(BaseModel):
     job_id = Property()
     value = Property()
 
-    entity = RelatedFrom('Entity', 'in')
+    entity = RelatedFrom('Entity', 'in_Entity')
     languages = RelatedTo('Language', 'has_Language')
     frameworks = RelatedTo('Framework', 'has_Framework')
     knowledge = RelatedTo('Knowledge', 'has_Knowledge')
@@ -177,14 +169,22 @@ class Job(BaseModel):
     def get_by_id(self):
         return self.match(graph, self.job_id).first()
 
+    def add_links(self, **kwargs):
+        self.languages.add(Language(**kwargs.get("has_Language")))
+        self.frameworks.add(Framework(**kwargs.get("has_Framework")))
+        self.knowledge.add(Knowledge(**kwargs.get("has_Knowledge")));
+        self.devices.add(Device(**kwargs.get("has_KnowDevice")));
+
 
 class Entity(GraphObject):
+    __primarykey__ = "ent_id"
+
     url_id = Property()
     ent_id = Property()
     value = Property()
     timestamp = Property()
 
-    job = RelatedTo('Job', 'has_Job')
+    has_job = RelatedTo('Job', 'has_Job')
 
     def as_dict(self):
         return {
@@ -197,8 +197,13 @@ class Entity(GraphObject):
     def get_by_id(self):
         return self.match(graph, self.ent_id).first()
 
+    def add_job(self, **kwargs):
+        self.has_job.add(Job(**kwargs.get("has_job")));
+
 
 class URL(GraphObject):
+    __primarykey__ = "url_id"
+
     url_id = Property()
     value = Property()
 
