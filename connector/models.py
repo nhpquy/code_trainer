@@ -34,8 +34,6 @@ class BaseModel(GraphObject):
 class Device(BaseModel):
     __primarykey__ = "device_id"
 
-    ent_id = Property()
-    job_id = Property()
     device_id = Property()
     value = Property()
 
@@ -43,8 +41,6 @@ class Device(BaseModel):
 
     def as_dict(self):
         return {
-            'ent_id': self.ent_id,
-            'job_id': self.job_id,
             'device_id': self.device_id,
             'value': self.value
         }
@@ -52,12 +48,13 @@ class Device(BaseModel):
     def get_by_id(self):
         return self.match(graph, self.device_id).first()
 
+    def in_job(self, **kwargs):
+        self.jobs.update(Job(**kwargs.get("required_In")))
+
 
 class Knowledge(BaseModel):
     __primarykey__ = "know_id"
 
-    ent_id = Property()
-    job_id = Property()
     know_id = Property()
     value = Property()
 
@@ -65,8 +62,6 @@ class Knowledge(BaseModel):
 
     def as_dict(self):
         return {
-            'ent_id': self.ent_id,
-            'job_id': self.job_id,
             'know_id': self.know_id,
             'value': self.value
         }
@@ -74,24 +69,22 @@ class Knowledge(BaseModel):
     def get_by_id(self):
         return self.match(graph, self.know_id).first()
 
+    def in_job(self, **kwargs):
+        self.jobs.update(Job(**kwargs.get("required_In")))
+
 
 class Experience(BaseModel):
     __primarykey__ = "exp_id"
 
-    ent_id = Property()
-    lang_id = Property()
-    frame_id = Property()
     exp_id = Property()
     value = Property()
 
-    frameworks = RelatedFrom('Framework', 'required_In')
-    languages = RelatedFrom('Language', 'required_In')
+    # frameworks = RelatedFrom('Framework', 'required_In')
+    # languages = RelatedFrom('Language', 'required_In')
+    jobs = RelatedFrom('Job', 'required_In')
 
     def as_dict(self):
         return {
-            'ent_id': self.ent_id,
-            'lang_id': self.lang_id,
-            'frame_id': self.frame_id,
             'exp_id': self.exp_id,
             'value': self.value
         }
@@ -99,22 +92,20 @@ class Experience(BaseModel):
     def get_by_id(self):
         return self.match(graph, self.exp_id).first()
 
+    def in_job(self, **kwargs):
+        self.jobs.update(Job(**kwargs.get("required_In")))
+
 
 class Language(BaseModel):
     __primarykey__ = "lang_id"
 
-    ent_id = Property()
-    job_id = Property()
     lang_id = Property()
     value = Property()
 
     jobs = RelatedFrom('Job', 'required_In')
-    experiences = RelatedTo('Experience', 'has_Experience')
 
     def as_dict(self):
         return {
-            'ent_id': self.ent_id,
-            'job_id': self.job_id,
             'lang_id': self.lang_id,
             'value': self.value
         }
@@ -122,22 +113,20 @@ class Language(BaseModel):
     def get_by_id(self):
         return self.match(graph, self.lang_id).first()
 
+    def in_job(self, **kwargs):
+        self.jobs.update(Job(**kwargs.get("required_In")))
+
 
 class Framework(BaseModel):
     __primarykey__ = "frame_id"
 
-    ent_id = Property()
-    job_id = Property()
     frame_id = Property()
     value = Property()
 
     jobs = RelatedFrom('Job', 'required_In')
-    experiences = RelatedTo('Experience', 'has_Experience')
 
     def as_dict(self):
         return {
-            'ent_id': self.ent_id,
-            'job_id': self.job_id,
             'frame_id': self.frame_id,
             'value': self.value
         }
@@ -145,11 +134,13 @@ class Framework(BaseModel):
     def get_by_id(self):
         return self.match(graph, self.frame_id).first()
 
+    def in_job(self, **kwargs):
+        self.jobs.update(Job(**kwargs.get("required_In")))
+
 
 class Job(BaseModel):
     __primarykey__ = "job_id"
 
-    ent_id = Property()
     job_id = Property()
     value = Property()
 
@@ -158,10 +149,10 @@ class Job(BaseModel):
     frameworks = RelatedTo('Framework', 'has_Framework')
     knowledge = RelatedTo('Knowledge', 'has_Knowledge')
     devices = RelatedTo('Device', 'has_KnowDevice')
+    experiences = RelatedTo('Experience', 'has_Experience')
 
     def as_dict(self):
         return {
-            'ent_id': self.ent_id,
             'job_id': self.job_id,
             'value': self.value
         }
@@ -172,14 +163,17 @@ class Job(BaseModel):
     def add_links(self, **kwargs):
         self.languages.add(Language(**kwargs.get("has_Language")))
         self.frameworks.add(Framework(**kwargs.get("has_Framework")))
-        self.knowledge.add(Knowledge(**kwargs.get("has_Knowledge")));
-        self.devices.add(Device(**kwargs.get("has_KnowDevice")));
+        self.knowledge.add(Knowledge(**kwargs.get("has_Knowledge")))
+        self.devices.add(Device(**kwargs.get("has_KnowDevice")))
+        self.experiences.add(Experience(**kwargs.get("has_Experience")))
+
+    def in_entity(self, **kwargs):
+        self.entity.update(Entity(**kwargs.get("in_Entity")))
 
 
-class Entity(GraphObject):
+class Entity(BaseModel):
     __primarykey__ = "ent_id"
 
-    url_id = Property()
     ent_id = Property()
     value = Property()
     timestamp = Property()
@@ -188,7 +182,6 @@ class Entity(GraphObject):
 
     def as_dict(self):
         return {
-            'url_id': self.url_id,
             'ent_id': self.ent_id,
             'value': self.value,
             'timestamp': self.timestamp
@@ -198,7 +191,7 @@ class Entity(GraphObject):
         return self.match(graph, self.ent_id).first()
 
     def add_job(self, **kwargs):
-        self.has_job.add(Job(**kwargs.get("has_job")));
+        self.has_job.add(Job(**kwargs.get("has_Job")))
 
 
 class URL(GraphObject):
