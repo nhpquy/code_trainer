@@ -36,6 +36,7 @@ from pathlib import Path
 import spacy
 from spacy.util import minibatch, compounding
 
+from connector.models import *
 from named_entity_recognition.train_data import TRAIN_DATA
 # training data
 # Note: If you're using an existing model, make sure to mix in examples of
@@ -47,7 +48,7 @@ from utils import get_output_dir, get_output_file, get_input_file
 default_output_dir = get_output_dir()
 
 
-def main(model=None, new_model_name="new_model", output_dir=default_output_dir, n_iter=10, input_file=None):
+def main(model=None, new_model_name="new_model", output_dir=default_output_dir, n_iter=50, input_file=None):
     if input_file is None:
         return
     """Set up the pipeline and entity recognizer, and train the new entity."""
@@ -113,6 +114,12 @@ def main(model=None, new_model_name="new_model", output_dir=default_output_dir, 
         json_text = json.dumps(test_obj, ensure_ascii=False)
         doc = nlp(json_text)
 
+        jobs = []
+        languages = []
+        frameworks = []
+        devices = []
+        knows = []
+        exps = []
         result = {
             'ENTITY_ID': str(uuid.uuid1()),
             'ENTITY': json_text,
@@ -123,23 +130,65 @@ def main(model=None, new_model_name="new_model", output_dir=default_output_dir, 
             'KNOWLEDGE': [],
             'EXPERIENCE': []
         }
+        entity = Entity(ent_id=str(uuid.uuid1()), value=json_text)
+
+        for ent in doc.ents:
+            if ent.label_ == 'JOB':
+                job = Job(job_id=str(uuid.uuid1()), value=ent.text)
+                job.save()
+                entity.add_job_instance(job)
+                jobs.append(job)
+        entity.save()
+
         for ent in doc.ents:
             result.get(ent.label_).append(ent.text)
-        results.append(result)
+            if ent.label_ == 'LANGUAGE':
+                language = Language(lang_id=str(uuid.uuid1()), value=ent.text)
+                language.save()
+                languages.append(language)
+            elif ent.label_ == 'FRAMEWORK':
+                framework = Framework(frame_id=str(uuid.uuid1()), value=ent.text)
+                framework.save()
+                frameworks.append(framework)
+            elif ent.label_ == 'DEVICE':
+                device = Device(device_id=str(uuid.uuid1()), value=ent.text)
+                device.save()
+                devices.append(device)
+            elif ent.label_ == 'KNOWLEDGE':
+                knowledge = Knowledge(know_id=str(uuid.uuid1()), value=ent.text)
+                knowledge.save()
+                knows.append(knowledge)
+            elif ent.label_ == 'EXPERIENCE':
+                device = Device(exp_id=str(uuid.uuid1()), value=ent.text)
+                device.save()
+                devices.append(device)
 
-    with open(output_file, mode='w', encoding='utf8') as f_output:
-        json.dump(results, f_output, ensure_ascii=False)
+            results.append(result)
 
-    return output_file
-    # save model to output directory
-    # if output_dir is not None:
-    #     output_dir = Path(output_dir)
-    #     if not output_dir.exists():
-    #         output_dir.mkdir()
-    #     nlp.meta["name"] = new_model_name  # rename model
-    #     nlp.to_disk(output_dir)
-    #     print("Saved model to", output_dir)
+        for job in jobs:
+            job.in_entity_instance(entity)
+            job.add_links_instance(
+                has_Language=languages,
+                has_Framework=frameworks,
+                has_Knowledge=knows,
+                has_KnowDevice=devices,
+                has_Experience=exps
+            )
+            job.save()
+
+        with open(output_file, mode='w', encoding='utf8') as f_output:
+            json.dump(results, f_output, ensure_ascii=False)
+
+        return output_file
+        # save model to output directory
+        # if output_dir is not None:
+        #     output_dir = Path(output_dir)
+        #     if not output_dir.exists():
+        #         output_dir.mkdir()
+        #     nlp.meta["name"] = new_model_name  # rename model
+        #     nlp.to_disk(output_dir)
+        #     print("Saved model to", output_dir)
 
 
 if __name__ == "__main__":
-    main(input_file='tv.json')
+    main(input_file='itviec.json')

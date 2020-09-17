@@ -1,13 +1,19 @@
-from py2neo.ogm import GraphObject, Property, RelatedTo, RelatedFrom
+import logging
 
-from connector import settings
-from connector.neo4jconnector import Neo4jConnection
+from py2neo import Graph
+from py2neo.ogm import GraphObject, Property, RelatedTo, RelatedFrom, RelatedObjects
 
-graph = Neo4jConnection(
-    settings.NEO4J_URL,
-    settings.NEO4J_USER,
-    settings.NEO4J_PASSWORD
-).get_graph()
+# graph = Neo4jConnection(
+#     settings.NEO4J_URL,
+#     settings.NEO4J_USER,
+#     settings.NEO4J_PASSWORD
+# ).get_graph()
+
+log = logging.getLogger(__name__)
+
+
+class NeoGraphObjectException(Exception):
+    pass
 
 
 class BaseModel(GraphObject):
@@ -18,198 +24,187 @@ class BaseModel(GraphObject):
     way we interact with them.
     """
 
+    id = Property("id")
+    value = Property("value")
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
 
-    @property
-    def all(self):
-        return self.match(graph)
+    @classmethod
+    def find(cls, matcher, **kwargs):
+        """
+        Matches the first label by a given keyword arguments
+        """
+        obj = matcher.match(**kwargs).first()
+        return obj
 
-    def save(self):
-        graph.push(self)
+    @classmethod
+    def create(cls, graph: Graph, attributes: dict = None):
+        """
+        Create a label from given attributes.\
+        At least the the __primarykey__ must available in the attributes dictionary.
+        """
+        obj = cls()
+        if cls.__primarykey__ not in attributes:
+            raise NeoGraphObjectException(f"Primary '{obj.__primarykey__}' not in attributes")
+        for attr, attr_value in attributes.items():
+            if hasattr(obj, attr) and not isinstance(getattr(obj, attr), RelatedObjects):
+                setattr(obj, attr, attr_value)
+        graph.create(obj)
+        return obj
+
+    @classmethod
+    def get(cls, graph: Graph, filters: dict):
+        """
+        Matches a labels from cls and reduces the result by the given filters.
+        """
+        obj = cls.match(graph)
+        for attr, attr_value in filters.items():
+            obj = obj.where(**{attr: attr_value})
+        obj = obj.first()
+        return obj
+
+    @classmethod
+    def get_or_create(cls, graph: Graph, pk=None, attributes: dict = None):
+        """
+        Serves as helper method to retrieve labels from the graph or create a new one if no label existed
+        """
+        if pk is None:
+            raise NeoGraphObjectException(f"Primary key missing")
+        obj = cls.get(graph, filters={cls.__primarykey__: pk})
+        if not obj:
+            if attributes is not None:
+                attributes = {cls.__primarykey__: pk, **attributes}
+            else:
+                attributes = {cls.__primarykey__: pk}
+            obj = cls.create(graph, attributes)
+        return obj
+
+    def as_dict(self):
+        return {
+            'id': self.id,
+            'value': self.value
+        }
 
 
 class Device(BaseModel):
-    __primarykey__ = "device_id"
+    __primarylabel__ = "Device"
+    __primarykey__ = "id"
 
-    device_id = Property()
-    value = Property()
-
-    jobs = RelatedFrom('Job', 'required_In')
-
-    def as_dict(self):
-        return {
-            'device_id': self.device_id,
-            'value': self.value
-        }
-
-    def get_by_id(self):
-        return self.match(graph, self.device_id).first()
+    jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
     def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("required_In")))
+        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
 
 
 class Knowledge(BaseModel):
-    __primarykey__ = "know_id"
+    __primarylabel__ = "Knowledge"
+    __primarykey__ = "id"
 
-    know_id = Property()
-    value = Property()
-
-    jobs = RelatedFrom('Job', 'required_In')
-
-    def as_dict(self):
-        return {
-            'know_id': self.know_id,
-            'value': self.value
-        }
-
-    def get_by_id(self):
-        return self.match(graph, self.know_id).first()
+    jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
     def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("required_In")))
+        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
 
 
 class Experience(BaseModel):
-    __primarykey__ = "exp_id"
+    __primarylabel__ = "Experience"
+    __primarykey__ = "id"
 
-    exp_id = Property()
-    value = Property()
-
-    # frameworks = RelatedFrom('Framework', 'required_In')
-    # languages = RelatedFrom('Language', 'required_In')
-    jobs = RelatedFrom('Job', 'required_In')
-
-    def as_dict(self):
-        return {
-            'exp_id': self.exp_id,
-            'value': self.value
-        }
-
-    def get_by_id(self):
-        return self.match(graph, self.exp_id).first()
+    jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
     def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("required_In")))
+        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
 
 
 class Language(BaseModel):
-    __primarykey__ = "lang_id"
+    __primarylabel__ = "Language"
+    __primarykey__ = "id"
 
-    lang_id = Property()
-    value = Property()
-
-    jobs = RelatedFrom('Job', 'required_In')
-
-    def as_dict(self):
-        return {
-            'lang_id': self.lang_id,
-            'value': self.value
-        }
-
-    def get_by_id(self):
-        return self.match(graph, self.lang_id).first()
+    jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
     def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("required_In")))
+        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
 
 
 class Framework(BaseModel):
-    __primarykey__ = "frame_id"
+    __primarylabel__ = "Framework"
+    __primarykey__ = "id"
 
-    frame_id = Property()
-    value = Property()
-
-    jobs = RelatedFrom('Job', 'required_In')
-
-    def as_dict(self):
-        return {
-            'frame_id': self.frame_id,
-            'value': self.value
-        }
-
-    def get_by_id(self):
-        return self.match(graph, self.frame_id).first()
+    jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
     def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("required_In")))
+        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
 
 
 class Job(BaseModel):
-    __primarykey__ = "job_id"
+    __primarylabel__ = "Job"
+    __primarykey__ = "id"
 
-    job_id = Property()
-    value = Property()
-
-    entity = RelatedFrom('Entity', 'in_Entity')
-    languages = RelatedTo('Language', 'has_Language')
-    frameworks = RelatedTo('Framework', 'has_Framework')
-    knowledge = RelatedTo('Knowledge', 'has_Knowledge')
-    devices = RelatedTo('Device', 'has_KnowDevice')
-    experiences = RelatedTo('Experience', 'has_Experience')
-
-    def as_dict(self):
-        return {
-            'job_id': self.job_id,
-            'value': self.value
-        }
-
-    def get_by_id(self):
-        return self.match(graph, self.job_id).first()
+    entity = RelatedFrom('Entity', 'IN_ENTITY')
+    languages = RelatedTo('Language', 'HAS_LANGUAGE')
+    frameworks = RelatedTo('Framework', 'HAS_FRAMEWORK')
+    knowledge = RelatedTo('Knowledge', 'HAS_KNOWLEDGE')
+    devices = RelatedTo('Device', 'HAS_DEVICE')
+    experiences = RelatedTo('Experience', 'HAS_EXPERIENCE')
 
     def add_links(self, **kwargs):
-        self.languages.add(Language(**kwargs.get("has_Language")))
-        self.frameworks.add(Framework(**kwargs.get("has_Framework")))
-        self.knowledge.add(Knowledge(**kwargs.get("has_Knowledge")))
-        self.devices.add(Device(**kwargs.get("has_KnowDevice")))
-        self.experiences.add(Experience(**kwargs.get("has_Experience")))
+        self.languages.add(Language(**kwargs.get("HAS_LANGUAGE")))
+        self.frameworks.add(Framework(**kwargs.get("HAS_FRAMEWORK")))
+        self.knowledge.add(Knowledge(**kwargs.get("HAS_KNOWLEDGE")))
+        self.devices.add(Device(**kwargs.get("HAS_DEVICE")))
+        self.experiences.add(Experience(**kwargs.get("HAS_EXPERIENCE")))
+
+    def add_links_instance(self, **kwargs):
+        if (kwargs.get("HAS_LANGUAGE")) is not None:
+            for language in kwargs.get("HAS_LANGUAGE"):
+                self.languages.add(language)
+        if (kwargs.get("HAS_FRAMEWORK")) is not None:
+            for framework in kwargs.get("HAS_FRAMEWORK"):
+                self.frameworks.add(framework)
+        if (kwargs.get("HAS_KNOWLEDGE")) is not None:
+            for knowledge in kwargs.get("HAS_KNOWLEDGE"):
+                self.knowledge.add(knowledge)
+        if (kwargs.get("HAS_DEVICE")) is not None:
+            for device in kwargs.get("HAS_DEVICE"):
+                self.devices.add(device)
+        if (kwargs.get("HAS_EXPERIENCE")) is not None:
+            for exp in kwargs.get("HAS_EXPERIENCE"):
+                self.experiences.add(exp)
 
     def in_entity(self, **kwargs):
-        self.entity.update(Entity(**kwargs.get("in_Entity")))
+        self.entity.update(Entity(**kwargs.get("IN_ENTITY")))
+
+    def in_entity_instance(self, entity):
+        self.entity.update(entity)
 
 
 class Entity(BaseModel):
-    __primarykey__ = "ent_id"
+    __primarylabel__ = "Entity"
+    __primarykey__ = "id"
 
-    ent_id = Property()
-    value = Property()
-    timestamp = Property()
+    create_at = Property("create_at")
 
     has_job = RelatedTo('Job', 'has_Job')
 
     def as_dict(self):
         return {
-            'ent_id': self.ent_id,
+            'id': self.id,
             'value': self.value,
-            'timestamp': self.timestamp
+            'create_at': self.create_at
         }
-
-    def get_by_id(self):
-        return self.match(graph, self.ent_id).first()
 
     def add_job(self, **kwargs):
-        self.has_job.add(Job(**kwargs.get("has_Job")))
+        self.has_job.add(Job(**kwargs.get("HAS_JOB")))
+
+    def add_job_instance(self, job):
+        self.has_job.add(job)
 
 
-class URL(GraphObject):
-    __primarykey__ = "url_id"
+class URL(BaseModel):
+    __primarylabel__ = "URL"
+    __primarykey__ = "id"
 
-    url_id = Property()
-    value = Property()
-
-    entities = RelatedTo('Entity', 'has_Entity')
-
-    def as_dict(self):
-        return {
-            'url_id': self.url_id,
-            'value': self.value
-        }
-
-    def get_by_id(self):
-        return self.match(graph, self.url_id).first()
-
-    def get_by_value(self):
-        return self.match(graph, self.value).first()
+    entities = RelatedTo('Entity', 'HAS_ENTITY')
