@@ -1,6 +1,6 @@
-import logging
+from py2neo import NodeMatcher
 
-from py2neo import Graph, NodeMatcher
+from connector.models import *
 
 log = logging.getLogger(__name__)
 
@@ -54,111 +54,75 @@ class Pipeline:
             # raise PipelineException(f"Requested pipeline '{section}' is not configured.")
             pass
 
-    def request_data(self, *args, **kwargs):
-        """
-        Abstract method to implement the request of data
-        """
-        raise NotImplementedError()
-
     def transform_data(self, *args, **kwargs):
         """
         Abstract method to transform the requested data into a another format
         """
         raise NotImplementedError()
 
-    def commit_data(self, *args, **kwargs):
-        """
-        Abstract method for writing transformed data to somewhere
-        """
-        raise NotImplementedError()
 
-
-class JobPipeline(Pipeline):
+class CrawlPipeline(Pipeline):
     """
     A pipeline to process Job
     """
 
     def __init__(self, config, *arg, **kwargs):
         super().__init__(config, *arg, **kwargs)
-        self.issues = None
-        self.issue_model_list = []
-
-    def request_data(self):
-        self.issues = self.project.issues.list(all=True)
+        self.crawl_result = None
 
     def transform_data(self):
-        for issue in self.issues:
-            issue_model = models.Issue.create(self.graph, issue.attributes)
-            # issue_model.belongs_to.update(self.project_model)
 
-            author_id = issue.attributes.get('author')
-            if author_id:
-                author_id = author_id['id']
-                author_dict = models.User.match(self.graph, author_id).first()
-                issue_model.created_by.update(author_dict)
+        entity_model = Entity.get_or_create(self.graph, self.crawl_result.attributes.get('entity'))
 
-            for assignee in issue.attributes.get('assignees'):
-                assignee_id = assignee['id']
-                author_dict = models.User.match(self.graph, assignee_id).first()
-                issue_model.was_assigned.update(author_dict)
+        for job in self.crawl_result.attributes.get('jobs'):
+            job_model = Job.get_or_create(self.graph, job.attributes)
+            entity_model.add_job(job_model)
 
-            assignee = issue.attributes.get('assignee')
-            if assignee:
-                assignee_id = assignee['id']
-                author_dict = models.User.match(self.graph, assignee_id).first()
-                issue_model.is_assigned.update(author_dict)
+            for language in self.crawl_result.attributes.get('languages'):
+                id = language['id']
+                language_model = Language.match(self.graph, id).first()
+                if language_model is None:
+                    language_model = Language.create(self.graph, language.attributes)
+                    language_model.in_job(job_model)
+                    language_model.save(self.graph)
+                job_model.languages.update(language_model)
 
-            closer_id = issue.attributes.get('closed_by')
-            if closer_id:
-                closer_id = closer_id['id']
-                author_dict = models.User.match(self.graph, closer_id).first()
-                issue_model.closed_by.update(author_dict)
+            for framework in self.crawl_result.attributes.get('frameworks'):
+                id = framework['id']
+                framework_model = Framework.match(self.graph, id).first()
+                if framework_model is None:
+                    framework_model = Framework.create(self.graph, framework.attributes)
+                    framework_model.in_job(job_model)
+                    framework_model.save(self.graph)
+                job_model.frameworks.update(framework_model)
 
-            for label_name in issue.attributes.get('labels'):
-                lbl_match = models.Label.match(self.graph).where(f"_.name =~ '{label_name}'")
-                if lbl_match:
-                    issue_model.has_label.update(lbl_match.first())
+            for knowledge in self.crawl_result.attributes.get('knowledges'):
+                id = knowledge['id']
+                knowledge_model = Language.match(self.graph, id).first()
+                if knowledge_model is None:
+                    knowledge_model = Knowledge.create(self.graph, knowledge.attributes)
+                    knowledge_model.in_job(job_model)
+                    knowledge_model.save(self.graph)
+                job_model.knowledges.update(knowledge_model)
 
-            milestone_id = issue.attributes.get('milestone')
-            if milestone_id:
-                milestone_id = milestone_id['id']
-                milestone_match = models.Milestone.match(self.graph, milestone_id)
-                if milestone_match:
-                    issue_model.has_milestone.update(milestone_match.first())
+            for device in self.crawl_result.attributes.get('devices'):
+                id = device['id']
+                device_model = Device.match(self.graph, id).first()
+                if device_model is None:
+                    device_model = Device.create(self.graph, device.attributes)
+                    device_model.in_job(job_model)
+                    device_model.save(self.graph)
+                job_model.devices.update(device_model)
 
-            if issue.attributes.get('has_tasks') is True:
-                task_status = issue.attributes.get('task_completion_status')
-                issue_model.task_count = task_status.get('task_count')
-                issue_model.task_completed = task_status.get('completed_count')
+            for experience in self.crawl_result.attributes.get('experiences'):
+                id = experience['id']
+                exp_model = Experience.match(self.graph, id).first()
+                if exp_model is None:
+                    exp_model = Experience.create(self.graph, experience.attributes)
+                    exp_model.in_job(job_model)
+                    exp_model.save(self.graph)
+                job_model.experiences.update(exp_model)
 
-            for note in issue.notes.list():
-                note_model = models.Note.get_or_create(self.graph, note.id, note.attributes)
-                # note_model.belongs_to.update(self.project_model)
-                if note.attributes.get('author'):
-                    author_dict = note.attributes.get('author')
-                    author_obj = models.User.match(self.graph, author_dict['id']).first()
-                    note_model.has_author.update(author_obj)
-                for award_emoji in note.awardemojis.list():
-                    emoji_model = models.AwardEmoji.get_or_create(self.graph, award_emoji.id, award_emoji.attributes)
-                    if award_emoji.attributes.get('user'):
-                        awarder_dict = award_emoji.attributes.get('user')
-                        awarder_obj = models.User.match(self.graph, awarder_dict['id']).first()
-                        emoji_model.was_awarded_by.update(awarder_obj)
-                    self.graph.push(emoji_model)
-                    note_model.was_awarded_with.update(emoji_model)
-                self.graph.push(note_model)
-                issue_model.has_note.update(note_model)
+            job_model.save(self.graph)
 
-            for award_emoji in issue.awardemojis.list():
-                emoji_model = models.AwardEmoji.get_or_create(self.graph, award_emoji.id, award_emoji.attributes)
-                if award_emoji.attributes.get('user'):
-                    awarder_dict = award_emoji.attributes.get('user')
-                    awarder_obj = models.User.match(self.graph, awarder_dict['id']).first()
-                    emoji_model.was_awarded_by.update(awarder_obj)
-                self.graph.push(emoji_model)
-                issue_model.was_awarded_with.update(emoji_model)
-            self.issue_model_list.append(issue_model)
-
-    def commit_data(self):
-        for issue_model in self.issue_model_list:
-            self.graph.push(issue_model)
+        entity_model.save(self.graph)

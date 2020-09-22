@@ -82,6 +82,12 @@ class BaseModel(GraphObject):
             obj = cls.create(graph, attributes)
         return obj
 
+    def save(self, graph: Graph):
+        """
+        Commit a labels from cls.
+        """
+        graph.push(self)
+
     def as_dict(self):
         return {
             'id': self.id,
@@ -95,8 +101,8 @@ class Device(BaseModel):
 
     jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
-    def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
+    def in_job(self, job):
+        self.jobs.update(job)
 
 
 class Knowledge(BaseModel):
@@ -105,8 +111,8 @@ class Knowledge(BaseModel):
 
     jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
-    def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
+    def in_job(self, job):
+        self.jobs.update(job)
 
 
 class Experience(BaseModel):
@@ -115,8 +121,8 @@ class Experience(BaseModel):
 
     jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
-    def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
+    def in_job(self, job):
+        self.jobs.update(job)
 
 
 class Language(BaseModel):
@@ -125,8 +131,8 @@ class Language(BaseModel):
 
     jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
-    def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
+    def in_job(self, job):
+        self.jobs.update(job)
 
 
 class Framework(BaseModel):
@@ -135,8 +141,8 @@ class Framework(BaseModel):
 
     jobs = RelatedFrom('Job', 'REQUIRED_IN')
 
-    def in_job(self, **kwargs):
-        self.jobs.update(Job(**kwargs.get("REQUIRED_IN")))
+    def in_job(self, job):
+        self.jobs.update(job)
 
 
 class Job(BaseModel):
@@ -146,38 +152,11 @@ class Job(BaseModel):
     entity = RelatedFrom('Entity', 'IN_ENTITY')
     languages = RelatedTo('Language', 'HAS_LANGUAGE')
     frameworks = RelatedTo('Framework', 'HAS_FRAMEWORK')
-    knowledge = RelatedTo('Knowledge', 'HAS_KNOWLEDGE')
+    knowledges = RelatedTo('Knowledge', 'HAS_KNOWLEDGE')
     devices = RelatedTo('Device', 'HAS_DEVICE')
     experiences = RelatedTo('Experience', 'HAS_EXPERIENCE')
 
-    def add_links(self, **kwargs):
-        self.languages.add(Language(**kwargs.get("HAS_LANGUAGE")))
-        self.frameworks.add(Framework(**kwargs.get("HAS_FRAMEWORK")))
-        self.knowledge.add(Knowledge(**kwargs.get("HAS_KNOWLEDGE")))
-        self.devices.add(Device(**kwargs.get("HAS_DEVICE")))
-        self.experiences.add(Experience(**kwargs.get("HAS_EXPERIENCE")))
-
-    def add_links_instance(self, **kwargs):
-        if (kwargs.get("HAS_LANGUAGE")) is not None:
-            for language in kwargs.get("HAS_LANGUAGE"):
-                self.languages.add(language)
-        if (kwargs.get("HAS_FRAMEWORK")) is not None:
-            for framework in kwargs.get("HAS_FRAMEWORK"):
-                self.frameworks.add(framework)
-        if (kwargs.get("HAS_KNOWLEDGE")) is not None:
-            for knowledge in kwargs.get("HAS_KNOWLEDGE"):
-                self.knowledge.add(knowledge)
-        if (kwargs.get("HAS_DEVICE")) is not None:
-            for device in kwargs.get("HAS_DEVICE"):
-                self.devices.add(device)
-        if (kwargs.get("HAS_EXPERIENCE")) is not None:
-            for exp in kwargs.get("HAS_EXPERIENCE"):
-                self.experiences.add(exp)
-
-    def in_entity(self, **kwargs):
-        self.entity.update(Entity(**kwargs.get("IN_ENTITY")))
-
-    def in_entity_instance(self, entity):
+    def in_entity(self, entity):
         self.entity.update(entity)
 
 
@@ -196,10 +175,7 @@ class Entity(BaseModel):
             'create_at': self.create_at
         }
 
-    def add_job(self, **kwargs):
-        self.has_job.add(Job(**kwargs.get("HAS_JOB")))
-
-    def add_job_instance(self, job):
+    def add_job(self, job):
         self.has_job.add(job)
 
 
