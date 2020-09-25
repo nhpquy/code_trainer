@@ -2,6 +2,10 @@
 *__pycache__*
 .idea/
 .idea/*
+.inputs/
+.inputs/*
+.outputs/
+.outputs/*
 
 build/*
 beowulf.egg-info/*
