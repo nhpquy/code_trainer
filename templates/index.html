@@ -1,0 +1,87 @@
+{% extends "base.html" %} {% block content %}
+
+    <div class="text-center">
+        <h1>Scrapy + Neo4j + Neovis.js</h1>
+    </div>
+    <div>
+        <div id="viz"></div>
+    </div>
+
+{% endblock %} {% block js %}
+    <script type="text/javascript">
+        var viz;
+
+        function draw() {
+            var config = {
+                container_id: "viz",
+                server_url: "bolt://localhost:7687",
+                server_user: "admin",
+                server_password: "123456",
+                labels: {
+                    "Device": {
+                        "caption": "value",
+                        "size": "pagerank",
+                    },
+                    "Knowledge": {
+                        "caption": "value",
+                        "size": "pagerank",
+                    },
+                    "Experience": {
+                        "caption": "value",
+                        "size": "pagerank",
+                    },
+                    "Language": {
+                        "caption": "value",
+                        "size": "pagerank",
+                    },
+                    "Framework": {
+                        "caption": "value",
+                        "size": "pagerank",
+                    },
+                    "Job": {
+                        "caption": "value",
+                        "size": "pagerank",
+                    },
+                    "Entity": {
+                        "caption": "id",
+                        "size": "pagerank",
+                    }
+                },
+                relationships: {
+                    "IN_ENTITY": {
+                        "thickness": "weight",
+                        "caption": true
+                    },
+                    "REQUIRED_IN": {
+                        "thickness": "weight",
+                        "caption": true
+                    },
+                    "HAS_LANGUAGE": {
+                        "thickness": "weight",
+                        "caption": true
+                    },
+                    "HAS_FRAMEWORK": {
+                        "thickness": "weight",
+                        "caption": true
+                    },
+                    "HAS_KNOWLEDGE": {
+                        "thickness": "weight",
+                        "caption": true
+                    },
+                    "HAS_DEVICE": {
+                        "thickness": "weight",
+                        "caption": true
+                    },
+                    "HAS_EXPERIENCE": {
+                        "thickness": "weight",
+                        "caption": true
+                    }
+                },
+                initial_cypher: "MATCH (n)-[r]->(m) RETURN n,r,m"
+            };
+
+            viz = new NeoVis.default(config);
+            viz.render();
+        }
+    </script>
+{% endblock %}

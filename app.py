@@ -1,16 +1,14 @@
 import subprocess
 import time
 
-from flask import Flask, jsonify, request, Response, abort
-from scrapy.crawler import CrawlerRunner
-from twisted.internet import reactor
+from flask import Flask, jsonify, request, Response, abort, render_template
 
 from crawl_spiders import crawl_spiders
 from named_entity_recognition import train
 from restful.response import ResponseBody
 from utils import get_input_file, get_scracy_dir
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 
 @app.route("/", methods=["GET"])
@@ -59,6 +57,11 @@ def train_data():
     body = ResponseBody(0, result).to_json()
     response = Response(body, status=200, mimetype="application/json")
     return response
+
+
+@app.route('/draw', methods=['GET', 'POST'])
+def index():
+    return render_template('index.html')
 
 
 if __name__ == "__main__":
