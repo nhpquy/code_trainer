@@ -3,12 +3,6 @@ import logging
 from py2neo import Graph
 from py2neo.ogm import GraphObject, Property, RelatedTo, RelatedFrom, RelatedObjects
 
-# graph = Neo4jConnection(
-#     settings.NEO4J_URL,
-#     settings.NEO4J_USER,
-#     settings.NEO4J_PASSWORD
-# ).get_graph()
-
 log = logging.getLogger(__name__)
 
 

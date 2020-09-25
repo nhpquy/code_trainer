@@ -28,15 +28,16 @@ Last tested with: v2.1.0
 """
 from __future__ import unicode_literals, print_function
 
+import hashlib
 import json
 import random
-import uuid
+import time
 from pathlib import Path
 
 import spacy
 from spacy.util import minibatch, compounding
 
-from connector.models import *
+from connector.pipelines import CrawlPipeline
 from named_entity_recognition.train_data import TRAIN_DATA
 # training data
 # Note: If you're using an existing model, make sure to mix in examples of
@@ -48,7 +49,7 @@ from utils import get_output_dir, get_output_file, get_input_file
 default_output_dir = get_output_dir()
 
 
-def main(model=None, new_model_name="new_model", output_dir=default_output_dir, n_iter=50, input_file=None):
+def main(model=None, new_model_name="new_model", output_dir=default_output_dir, n_iter=10, input_file=None):
     if input_file is None:
         return
     """Set up the pipeline and entity recognizer, and train the new entity."""
@@ -110,71 +111,39 @@ def main(model=None, new_model_name="new_model", output_dir=default_output_dir, 
             output_dir.mkdir()
 
     results = []
+    created_at = time.time()
+    crawl_pipeline = CrawlPipeline()
     for test_obj in test_arr:
         json_text = json.dumps(test_obj, ensure_ascii=False)
         doc = nlp(json_text)
 
-        jobs = []
-        languages = []
-        frameworks = []
-        devices = []
-        knows = []
-        exps = []
+        entity_id = hashlib.md5(json_text.encode('utf-8')).hexdigest()
         result = {
-            'ENTITY_ID': str(uuid.uuid1()),
-            'ENTITY': json_text,
-            'JOB': [],
-            'LANGUAGE': [],
-            'FRAMEWORK': [],
-            'DEVICE': [],
-            'KNOWLEDGE': [],
-            'EXPERIENCE': []
+            'entity': {
+                'id': entity_id,
+                'value': json_text,
+                'created_at': created_at
+            },
+            'jobs': [],
+            'languages': [],
+            'frameworks': [],
+            'knowledges': [],
+            'devices': [],
+            'experiences': []
         }
-        entity = Entity(ent_id=str(uuid.uuid1()), value=json_text)
 
         for ent in doc.ents:
-            if ent.label_ == 'JOB':
-                job = Job(job_id=str(uuid.uuid1()), value=ent.text)
-                job.save()
-                entity.add_job_instance(job)
-                jobs.append(job)
-        entity.save()
+            if ent.label_ and ent.text:
+                attribute = {
+                    'id': hashlib.md5(ent.text.encode('utf-8')).hexdigest(),
+                    'value': ent.text
+                }
+                attribute_arr_key = ent.label_.lower() + 's'
+                result[attribute_arr_key].append(attribute)
 
-        for ent in doc.ents:
-            result.get(ent.label_).append(ent.text)
-            if ent.label_ == 'LANGUAGE':
-                language = Language(lang_id=str(uuid.uuid1()), value=ent.text)
-                language.save()
-                languages.append(language)
-            elif ent.label_ == 'FRAMEWORK':
-                framework = Framework(frame_id=str(uuid.uuid1()), value=ent.text)
-                framework.save()
-                frameworks.append(framework)
-            elif ent.label_ == 'DEVICE':
-                device = Device(device_id=str(uuid.uuid1()), value=ent.text)
-                device.save()
-                devices.append(device)
-            elif ent.label_ == 'KNOWLEDGE':
-                knowledge = Knowledge(know_id=str(uuid.uuid1()), value=ent.text)
-                knowledge.save()
-                knows.append(knowledge)
-            elif ent.label_ == 'EXPERIENCE':
-                device = Device(exp_id=str(uuid.uuid1()), value=ent.text)
-                device.save()
-                devices.append(device)
-
-            results.append(result)
-
-        for job in jobs:
-            job.in_entity_instance(entity)
-            job.add_links_instance(
-                has_Language=languages,
-                has_Framework=frameworks,
-                has_Knowledge=knows,
-                has_KnowDevice=devices,
-                has_Experience=exps
-            )
-            job.save()
+        crawl_pipeline.crawl_result = result
+        crawl_pipeline.transform_data()
+        results.append(result)
 
         with open(output_file, mode='w', encoding='utf8') as f_output:
             json.dump(results, f_output, ensure_ascii=False)
@@ -191,4 +160,4 @@ def main(model=None, new_model_name="new_model", output_dir=default_output_dir, 
 
 
 if __name__ == "__main__":
-    main(input_file='itviec.json')
+    main(input_file='tv.json')
