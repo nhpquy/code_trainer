@@ -1,87 +1,137 @@
-{% extends "base.html" %} {% block content %}
+<!DOCTYPE html>
+<html lang="en">
 
-    <div class="text-center">
-        <h1>Scrapy + Neo4j + Neovis.js</h1>
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Spacy & Neo4j Crawler</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+</head>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card-body">
+                <h4 class="card-title">Crawl and Training data</h4>
+                <p class="card-text">Select IT work website click on "Analyze" button to create your
+                    process</p>
+            </div>
+
+        </div>
     </div>
-    <div>
-        <div id="viz"></div>
+</div>
+
+<br>
+
+
+<div class="container alert alert-secondary">
+    <form>
+        <div class="inner-form">
+            <div class="input-field first-wrap">
+                <div class="input-select">
+                    <select id="select_website" name="choices-single-defaul" required>
+                        <option value="" disabled selected hidden>What are you looking for?</option>
+                        <option value="careerbuilder">careerbuilder.vn</option>
+                        <option value="careerlink">careerlink.vn</option>
+                        <option value="devwork">devwork.vn</option>
+                        <option value="it">itviec.com</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-field second-wrap">
+                <button class="btn-search" id="crawl_train_data" type="button">ANALYZE</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Alert Message for successful transaction -->
+    <div class="modal modal-alert fade" id="success_process" tabindex="-1" role="dialog"
+         aria-labelledby="basicModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-success" role="alert">
+                        <h4 class="alert-heading">Successful Train!</h4>
+                        <p>You successfully completed your crawling and training data. See detail
+                            below:</p>
+                        <div class="col-sm-10">
+                            <textarea id="process_detail" rows="1" class="form-control" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="button_visualize" class="btn btn-success" data-dismiss="modal">
+                        Visualize
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-{% endblock %} {% block js %}
-    <script type="text/javascript">
-        var viz;
 
-        function draw() {
-            var config = {
-                container_id: "viz",
-                server_url: "bolt://localhost:7687",
-                server_user: "admin",
-                server_password: "123456",
-                labels: {
-                    "Device": {
-                        "caption": "value",
-                        "size": "pagerank",
-                    },
-                    "Knowledge": {
-                        "caption": "value",
-                        "size": "pagerank",
-                    },
-                    "Experience": {
-                        "caption": "value",
-                        "size": "pagerank",
-                    },
-                    "Language": {
-                        "caption": "value",
-                        "size": "pagerank",
-                    },
-                    "Framework": {
-                        "caption": "value",
-                        "size": "pagerank",
-                    },
-                    "Job": {
-                        "caption": "value",
-                        "size": "pagerank",
-                    },
-                    "Entity": {
-                        "caption": "id",
-                        "size": "pagerank",
-                    }
+<script>
+    $(function () {
+        $("#crawl_train_data").click(function () {
+            let website_type = $('#select_website').val();
+            $.ajax({
+                url: "/api/v1/process",
+                type: "POST",
+                dataType: 'json',
+                data: {
+                    type: website_type,
                 },
-                relationships: {
-                    "IN_ENTITY": {
-                        "thickness": "weight",
-                        "caption": true
-                    },
-                    "REQUIRED_IN": {
-                        "thickness": "weight",
-                        "caption": true
-                    },
-                    "HAS_LANGUAGE": {
-                        "thickness": "weight",
-                        "caption": true
-                    },
-                    "HAS_FRAMEWORK": {
-                        "thickness": "weight",
-                        "caption": true
-                    },
-                    "HAS_KNOWLEDGE": {
-                        "thickness": "weight",
-                        "caption": true
-                    },
-                    "HAS_DEVICE": {
-                        "thickness": "weight",
-                        "caption": true
-                    },
-                    "HAS_EXPERIENCE": {
-                        "thickness": "weight",
-                        "caption": true
-                    }
-                },
-                initial_cypher: "MATCH (n)-[r]->(m) RETURN n,r,m"
-            };
 
-            viz = new NeoVis.default(config);
-            viz.render();
-        }
-    </script>
-{% endblock %}
+                success: function (response) {
+
+                    document.getElementById("process_detail").innerHTML = response;
+                    $("#success_process").modal('show');
+
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+
+        });
+    });
+</script>
+
+<script>
+    $(function () {
+        $("#button_visualize").click(function () {
+            $.ajax({
+                url: "/visualize",
+                type: "GET",
+                dataType: 'json',
+
+                success: function (response) {
+
+
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+
+        });
+    });
+
+</script>
+</body><!-- This templates was made by Colorlib (https://colorlib.com) -->
+</html>
