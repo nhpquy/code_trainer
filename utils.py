@@ -2,7 +2,7 @@ import os
 
 input_dir = 'inputs/'
 output_dir = 'outputs/'
-scrapy_dir = 'Scrapy/requiment/requiment'
+scrapy_dir = 'Scrapy/requiment/requiment/spiders'
 
 
 def get_project_root():

@@ -9,7 +9,8 @@ log = logging.getLogger(__name__)
 class NeoGraphObjectException(Exception):
     pass
 
-
+# Class model nay la cau truc du lieu Graph cua Neo4J
+# Lop co so nay BaseModel se co nhung ham: find, create, save de tuong tac voi Neo4j tao ra cac CTDL graph voi Neo4j
 class BaseModel(GraphObject):
     """
     Implements some basic functions to guarantee some standard functionality
@@ -138,11 +139,19 @@ class Framework(BaseModel):
     def in_job(self, job):
         self.jobs.update(job)
 
-
+# Job tuong ung voi cong viec co trong cau
+# Job se la Object chua cac quan he chi tiet de cac knowledge
+# Entity se co cac job
+# Cac Job se co nhung knowledge: framwwork, device,...
 class Job(BaseModel):
     __primarylabel__ = "Job"
     __primarykey__ = "id"
 
+    # Cac quan he => tao ra cac canh quan he trong graph
+    # Canh bao gom RelatedFrom va RelatedTo:
+    # RelatedFrom la quan he voi object cha, Voi Job -> Cha se la Cau
+    # RelatedTo la quan he voi cac object con, VOi Job -> Con se la Language, Framework,...
+    # Cac quan he nay se dung label la: IN_ENTITY, HAS_LANGUAGE,... de hien thi trong graph
     entity = RelatedFrom('Entity', 'IN_ENTITY')
     languages = RelatedTo('Language', 'HAS_LANGUAGE')
     frameworks = RelatedTo('Framework', 'HAS_FRAMEWORK')
@@ -150,10 +159,15 @@ class Job(BaseModel):
     devices = RelatedTo('Device', 'HAS_DEVICE')
     experiences = RelatedTo('Experience', 'HAS_EXPERIENCE')
 
+    # Ham nay de update cho quan he: Job nay thuoc Cau nao: IN_ENTITY
     def in_entity(self, entity):
         self.entity.update(entity)
 
-
+# Entity tuong ung voi 1 Cau:
+# Label cua Node nay la Entity
+# Khoa chinh la Id
+# Thoi gian tao
+# Cac Job co trong Cau
 class Entity(BaseModel):
     __primarylabel__ = "Entity"
     __primarykey__ = "id"

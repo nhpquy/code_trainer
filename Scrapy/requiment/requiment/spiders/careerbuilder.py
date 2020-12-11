@@ -24,13 +24,12 @@ class StackSpider(Spider):
                 'item': job_url
             }
             yield scrapy.Request(job_url, callback=self.parse_job)
-        next_page_partial_url = response.xpath(
-            '//div[@class="clr"]/a/@href').extract_first()
+        next_page_partial_url = response.xpath('//div[@class="clr"]/a/@href').extract_first()
 
     def parse(self, response):
         item = RequimentItem()
-        item['title'] = response.xpath('//div[@class="top-job-info"]/h1/text()').extract()
-        item['mo_ta'] = response.xpath('/html/body/div[2]/div[3]/div[5]/div[2]/div/div[1]/text()').extract()
+        item['title'] = response.xpath('/html/body/main/section[2]/div/div/div[1]/section/div[2]/div[1]/p/text()').extract()
+        item['mo_ta'] = response.xpath('//h3[@class="detail-title"]/text()').extract()
         item['yeu_cau'] = response.xpath('/html/body/div[2]/div[3]/div[5]/div[2]/div/div[2]/text()').extract()
 
         yield item

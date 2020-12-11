@@ -21,6 +21,10 @@ class Pipeline:
         self.matcher = None
         self._init_neo4j()
 
+    # Khi tao 1 Object Pipeline moi => Python se goi ham _init nay
+    # Nen chi can tao 1 object ban dau, de thiet lap ket noi voi Neo4J
+    # Sau do gan lai bien result roi thuc hien transform du lieu thanh graph
+    # => tiet kiem duoc tgian ket noi voi Neo4j
     def _init_neo4j(self):
         self.graph = Neo4jConnection(
             settings.NEO4J_URL,
@@ -45,6 +49,8 @@ class Pipeline:
         raise NotImplementedError()
 
 
+# Class CrawlPipeline ke thua Pipeline de su dung ham init connection cua lop cha
+# Va co field result rieng, field de luu ket qua phan tich sau khi crawl du lieu
 class CrawlPipeline(Pipeline):
     """
     A pipeline to process Job
@@ -54,23 +60,39 @@ class CrawlPipeline(Pipeline):
         super().__init__(*arg, **kwargs)
         self.crawl_result = None
 
+    # Ham transform data, tu du lieu crawl da phan tich sang dang graph cua Neo4j
+    # 1 Cau se co cau truc grpah nhu sau:
+    # Ghi chu ben file models
+
     def transform_data(self):
+        # Tao Node Entity
+        # Voi moi Node (Dinh) cua graph ta se tim trong database xem no da ton tai hay chua bang Id la hash md5 cua no.
+        # Vi du: PHP Developer (WordPress, Magento) se la 1 node cua Job, neu co se query len bang id cua node, neu khong co se tao moi
+
+        # Ham query 'get' voi id cua Entity
         entity_model = Entity.get(self.graph, {'id': self.crawl_result.get('entity')['id']})
+        # Tao moi neu khong thay
         if entity_model is None:
             entity_model = Entity.create(self.graph, self.crawl_result.get('entity'))
 
+        # Tuong tu nhu vay se den Job: 1 cau se co nhieu Job
         for job in self.crawl_result.get('jobs'):
             job_model = Job.get(self.graph, {'id': job['id']})
             if job_model is None:
                 job_model = Job.create(self.graph, job)
+
+            # Them lien ket quan he con voi Job cho Entity
             entity_model.add_job(job_model)
 
+            # Trong moi Job se co cac knowledge
+            # => Them 1 vong lap cho cac knowledge thuoc Job, de tao cac lien ket quan he con cho Job voi cac knowledge nay
             for language in self.crawl_result.get('languages'):
                 language_model = Language.get(self.graph, {'id': language['id']})
                 if language_model is None:
                     language_model = Language.create(self.graph, language)
                     language_model.in_job(job_model)
                     language_model.save(self.graph)
+                # Them lien ket quan he con Model voi Job
                 job_model.languages.add(language_model)
 
             for framework in self.crawl_result.get('frameworks'):
@@ -79,6 +101,7 @@ class CrawlPipeline(Pipeline):
                     framework_model = Framework.create(self.graph, framework)
                     framework_model.in_job(job_model)
                     framework_model.save(self.graph)
+                # Them lien ket quan he con Framework voi Job
                 job_model.frameworks.add(framework_model)
 
             for knowledge in self.crawl_result.get('knowledges'):
@@ -87,6 +110,7 @@ class CrawlPipeline(Pipeline):
                     knowledge_model = Knowledge.create(self.graph, knowledge)
                     knowledge_model.in_job(job_model)
                     knowledge_model.save(self.graph)
+                # Them lien ket quan he con Knowledge voi Job
                 job_model.knowledges.add(knowledge_model)
 
             for device in self.crawl_result.get('devices'):
@@ -95,6 +119,7 @@ class CrawlPipeline(Pipeline):
                     device_model = Device.create(self.graph, device)
                     device_model.in_job(job_model)
                     device_model.save(self.graph)
+                # Them lien ket quan he con Device voi Job
                 job_model.devices.add(device_model)
 
             for experience in self.crawl_result.get('experiences'):
@@ -103,10 +128,14 @@ class CrawlPipeline(Pipeline):
                     exp_model = Experience.create(self.graph, experience)
                     exp_model.in_job(job_model)
                     exp_model.save(self.graph)
+                # Them lien ket quan he con Exp voi Job
                 job_model.experiences.add(exp_model)
 
+            # Sau khi hoan thanh tao cac Node knowledge va cac lien ket cua cac node nay voi node cha Job
+            # Luu chung' xuong database bang ham save
             job_model.save(self.graph)
 
+        # Tuo0ng tu Luu Node Entity xuong database: Node Entity nay da co quan he voi cac Job
         entity_model.save(self.graph)
 
 

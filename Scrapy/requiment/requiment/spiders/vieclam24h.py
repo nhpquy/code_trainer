@@ -25,9 +25,9 @@ class StackSpider(scrapy.Spider):
         item = RequimentItem()
         item['title'] = response.xpath(
             '//div[@class="box_chi_tiet_cong_viec bg_white mt16 box_shadow"]//h1/text()').extract()
-        item['ten_cong_ty'] = response.xpath('normalize-space(//div[@class="box_chi_tiet_cong_viec bg_white mt16 '
-                                             'box_shadow"]//p/a/text())').extract()
-        item['dia_chi'] = response.xpath('normalize-space(//div[@id="ttd_detail"]/div[2]/div[3]/p/text())').extract()
+        # item['ten_cong_ty'] = response.xpath('normalize-space(//div[@class="box_chi_tiet_cong_viec bg_white mt16 '
+        #                                      'box_shadow"]//p/a/text())').extract()
+        # item['dia_chi'] = response.xpath('normalize-space(//div[@id="ttd_detail"]/div[2]/div[3]/p/text())').extract()
         item['mo_ta'] = response.xpath('//div[@id="ttd_detail"]//div[@class="pl_24 pr_24"]/div[1]/p/text()').extract()
         item['yeu_cau'] = response.xpath('//div[@id="ttd_detail"]//div[@class="pl_24 pr_24"]/div[3]/p/text()').extract()
 

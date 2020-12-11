@@ -21,14 +21,14 @@ class StackSpider(Spider):
 
             job_url = self.base_url + job_url
             yield scrapy.Request(job_url, callback=self.parse_job)
-        next_page_partial_url = response.xpath('//ul[@class="pagination"]/li/a/@href').extract_first()
-        next_page_url = self.base_url + next_page_partial_url
+        next_page_partial_url = response.xpath('//ul[@class="pagination"]/li/a/@href').extract()
+        next_page_url = self.base_url + str(next_page_partial_url)
         yield scrapy.Request(next_page_url, callback=self.parse)
 
     def parse_job(self, response):
         title = response.xpath('//span[@itemprop="title"]/text()').extract()
         mo_ta = response.xpath('//div[@itemprop="description"]/p/text()').extract()
-        yeu_cau = response.xpath('normalize-space(//div[@itemprop="skills"]/p/text())').extract_first()
+        yeu_cau = response.xpath('normalize-space(//div[@itemprop="skills"]/p/text())').extract()
 
         yield {
             'title': title,

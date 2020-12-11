@@ -19,9 +19,9 @@ class SpiderSpider(scrapy.Spider):
 
     def parse_job(self, response):
         title = response.xpath('normalize-space(//h1[@class="page-title"]/text())').extract_first()
-        ten_ct = response.xpath('//h3[@class="company-title"]/a/text()').extract()
+        # ten_ct = response.xpath('//h3[@class="company-title"]/a/text()').extract()
 
-        dia_chi = response.xpath('//span[@class="job-location"]/a/em/text()').extract_first()
+        # dia_chi = response.xpath('//span[@class="job-location"]/a/em/text()').extract_first()
         kinh_nghiem = response.xpath('//div[@class="job-desc"]/ul[1]/li[3]/text()').extract()
         muc_luong = response.xpath('//div[@class="job-desc"]/ul[1]/li[4]/text()').extract()
         mo_ta = response.xpath('//div[@class="job-desc"]/ul[2]/li/text()').extract()
@@ -29,8 +29,8 @@ class SpiderSpider(scrapy.Spider):
 
         yield {
             'Title': title,
-            'ten_cong_ty': ten_ct,
-            'dia_chi': dia_chi,
+            # 'ten_cong_ty': ten_ct,
+            # 'dia_chi': dia_chi,
             'kinh_nghiem': kinh_nghiem,
             'muc_luong': muc_luong,
             'mo_ta': mo_ta,

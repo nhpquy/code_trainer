@@ -15,6 +15,7 @@
     <link href="/static/css/custom.css" rel="stylesheet">
 
 </head>
+<body>
 
 <div class="container">
     <div class="row">
@@ -31,13 +32,11 @@
 </div>
 
 <br>
-
-
 <div class="container alert alert-secondary">
-    <form>
-        <div class="inner-form">
-            <div class="input-field first-wrap">
-                <div class="input-select">
+    <form id="transaction_form">
+{#        <div class="row">#}
+        <div class="col-lg-2 ">
+                <div class="input-select ">
                     <select id="select_website" name="choices-single-defaul" required>
                         <option value="" disabled selected hidden>What are you looking for?</option>
                         <option value="careerbuilder">careerbuilder.vn</option>
@@ -46,44 +45,89 @@
                         <option value="it">itviec.com</option>
                     </select>
                 </div>
-            </div>
-            <div class="input-field second-wrap">
-                <button class="btn-search" id="crawl_train_data" type="button">ANALYZE</button>
+        </div>
+{#        </div>#}
+
+        <br>
+
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <input type="button" id="crawl_train_data" class="btn btn-primary btn-lg"
+                       value="ANALYZE">
             </div>
         </div>
+
+        <br>
+
     </form>
+</div>
 
-    <!-- Alert Message for successful transaction -->
-    <div class="modal modal-alert fade" id="success_process" tabindex="-1" role="dialog"
-         aria-labelledby="basicModal" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
 
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                </div>
+<!-- Alert Message for successful transaction -->
+<div class="modal modal-alert fade" id="success_process" tabindex="-1" role="dialog"
+     aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
 
-                <div class="modal-body">
-                    <div class="alert alert-success" role="alert">
-                        <h4 class="alert-heading">Successful Train!</h4>
-                        <p>You successfully completed your crawling and training data. See detail
-                            below:</p>
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="alert alert-success" role="alert">
+                    <h4 class="alert-heading">Successful Train!</h4>
+                    <p>You successfully completed your crawling and training data. See detail
+                        below:</p>
+                    <div class="row">
+                        <label class="col-sm-2">Crawl Time:</label>
                         <div class="col-sm-10">
-                            <textarea id="process_detail" rows="1" class="form-control" readonly></textarea>
+                            <textarea id="crawl_time" rows="1" class="form-control" readonly></textarea>
+                        </div>
+                    </div>
+
+                    <br>
+
+                    <div class="row">
+                        <label class="col-sm-2">Train Time:</label>
+                        <div class="col-sm-10">
+                            <textarea id="train_time" rows="1" class="form-control" readonly></textarea>
+                        </div>
+                    </div>
+
+                    <br>
+
+                    <div class="row">
+                        <label class="col-sm-2">Looses:</label>
+                        <div class="col-sm-10">
+                            <textarea id="losses" rows="2" class="form-control" readonly></textarea>
+                        </div>
+                    </div>
+
+                    <br>
+
+                    <div class="row">
+                        <label class="col-sm-2">Scores:</label>
+                        <div class="col-sm-10">
+                            <textarea id="scores" rows="2" class="form-control" readonly></textarea>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="modal-footer">
-                    <button type="button" id="button_visualize" class="btn btn-success" data-dismiss="modal">
-                        Visualize
-                    </button>
-                </div>
+            <div class="modal-footer">
+                <button type="button" id="button_visualize" class="btn btn-success" data-dismiss="modal">
+                    Visualize
+                </button>
             </div>
         </div>
     </div>
 </div>
+</div>
 
+<!-- Bootstrap core JavaScript -->
+<script src="/static/vendor/jquery/jquery.min.js"></script>
+<script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
 <script>
     $(function () {
@@ -92,14 +136,18 @@
             $.ajax({
                 url: "/api/v1/process",
                 type: "POST",
+                contentType: 'application/json',
                 dataType: 'json',
-                data: {
+                data: JSON.stringify({
                     type: website_type,
-                },
+                }),
 
                 success: function (response) {
-
-                    document.getElementById("process_detail").innerHTML = response;
+                    console.log(response["data"])
+                    document.getElementById("crawl_time").innerHTML = response['data']['crawl_time'];
+                    document.getElementById("train_time").innerHTML = response['data']['train_time'];
+                    document.getElementById("losses").innerHTML = JSON.stringify(response['data']['losses']);
+                    document.getElementById("scores").innerHTML = JSON.stringify(response['data']['scores']);
                     $("#success_process").modal('show');
 
                 },
@@ -118,11 +166,9 @@
             $.ajax({
                 url: "/visualize",
                 type: "GET",
-                dataType: 'json',
 
                 success: function (response) {
-
-
+                    window.open("http://127.0.0.1:8082/visualize")
                 },
                 error: function (error) {
                     console.log(error);

@@ -24,9 +24,9 @@ class StackSpider(Spider):
     def parse_job(self, response):
         item = RequimentItem()
         item['title'] = response.xpath('normalize-space(//header[@class="block-title"]//span/text())').extract_first()
-        item['ten_cong_ty'] = response.xpath('normalize-space(//article[@class="block-content"]//h3/a/text())').extract()
-        item['dia_chi'] = response.xpath('//article[@class="block-content"]//div[@class="col-xs-6 p-r-10 '
-                                         'offset10"]//span/text()').extract_first()
+        # item['ten_cong_ty'] = response.xpath('normalize-space(//article[@class="block-content"]//h3/a/text())').extract()
+        # item['dia_chi'] = response.xpath('//article[@class="block-content"]//div[@class="col-xs-6 p-r-10 '
+        #                                  'offset10"]//span/text()').extract_first()
         item['mo_ta'] = response.xpath('//article[@class="block-content"]//table/tbody/tr[1]/td[2]/p/text()').extract()
         item['yeu_cau'] = response.xpath('//article[@class="block-content"]//table/tbody/tr[2]/td[2]/p/text()').extract()
 
